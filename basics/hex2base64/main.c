@@ -14,7 +14,7 @@ const char * base64_table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy
 
 
 
-int hex2base64(char *hex, int char_num, char * out);
+char * hex2base64(char *hex, int char_num);
 
 int main(int argc, char ** argv){
 
@@ -31,7 +31,7 @@ int main(int argc, char ** argv){
     printf("Number of characters in target: %d\n", num_t);
     //char output[num_t+1] = "";
     char * output;
-    hex2base64((char *)hex, num_o, output);
+    output = hex2base64((char *)hex, num_o);
     printf("Converted string is %s", output);
 
 
@@ -62,7 +62,7 @@ void printf_binary(int num){
 }
 
 
-int hex2base64(char *hex, int char_num, char * out){
+char* hex2base64(char *hex, int char_num){
     assert(char_num > 0);
     int x = char_num % 3;
     if (x != 0){
@@ -73,18 +73,20 @@ int hex2base64(char *hex, int char_num, char * out){
     printf("hex2base64 hex:\n");
     printf("%s\n", hex);
     int num_base64 = char_num / 3 * 2;
-    out = malloc(sizeof(char) * (num_base64 + 1));
+    char *out = malloc(sizeof(char) * (num_base64 + 1));
     *(out + num_base64) = '\0';
     unsigned int base_char = 0;
     unsigned int num = 0;
     char low_letter, high_letter;
     printf(" char_num=%d\n", char_num);
-    for (int i=0; i<char_num; i++){
-        printf(" i = %d; letters: 0x0%c%c%c\n", i, *hex, *hex+1, *hex+2);
+    for (int i=0; i<char_num/3; i++){
+        printf(" i = %d; letters: 0x0%c%c%c\n", i, *hex, *(hex+1), *(hex+2));
         unsigned int base = 0;
+        num = 0;
         for (int j=0; j<3; j++){
-            num = char2num(*(hex++));
             num <<= 4;
+            num |= char2num(*(hex++));
+            printf("num=0x%02x\n", num);
         }
         printf(" binary form: ");
         printf_binary(num);
@@ -97,7 +99,7 @@ int hex2base64(char *hex, int char_num, char * out){
     }
     printf("exit hex2base64\n");
 
-    return EXIT_SUCCESS;
+    return out;
 }
 
 
