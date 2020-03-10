@@ -14,9 +14,6 @@
 #include <assert.h>
 
 
-const char * buffer1_string = "1c0111001f010100061a024b53535009181c";
-const char * buffer2_string = "686974207468652062756c6c277320657965";
-const char * result_string = "746865206b696420646f6e277420706c6179";
 
 unsigned int char2num(char c);
 char * string2array(char * c);
@@ -26,29 +23,9 @@ char * hexarray2string(char * array, int array_len);
 
 
 int main(int args, char ** argv){
-    printf("string1:\n%s\n", buffer1_string);
-    printf("string2:\n%s\n", buffer2_string);
-    printf("target:\n%s\n\n", result_string);
 
-    char *buffer1 = string2array((char *)buffer1_string);
-    char *buffer2 = string2array((char *)buffer2_string);
-    char *target = string2array((char *)result_string);
-    int buffer_len = strlen(buffer1_string);
-    char *output = xor_buffer(buffer1, buffer2, buffer_len); 
-    char *output_string = hexarray2string(output, buffer_len);
-    printf("output:\n%s\n", output_string);
-    int cmp_result = strcmp(result_string, output_string);
-    if (cmp_result == 0){
-        printf(" target == output\n");
-    } else {
-        printf(" target != output\n");
-    }
 
-    free(buffer1);
-    free(buffer2);
-    free(target);
-    free(output);
-    free(output_string);
+    return EXIT_SUCCESS;
 }
 
 char * xor_buffer(char * buffer1, char *buffer2, int buffer_len){
