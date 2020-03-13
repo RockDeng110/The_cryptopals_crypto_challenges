@@ -31,90 +31,121 @@ char * string2array(char * c);
 char * xor_buffer(char * buffer1, char *buffer2, int buffer_len);
 char hexnum2char(char num);
 char * hexarray2string(char * array, int array_len);
-int hexstring2hexarray(char *hexstring, char *hexarray);
+int hexstring2hexarray(char *hexstring, char **hexarray);
+int calc_letter_freq(char * string, int str_len, int * result);
 
 
 int main(int args, char ** argv){
 
     ///< convert hex_string to hex array
-    char * hex_array, decrypt_array;
+    char * hex_array = NULL;
+    char * decrypt_array = NULL;
+    int letter_freq[26] = {0};
     int hex_array_len;
-    hex_array_len = hexarray2string(hex_string, hex_array);
-    decrypt_array = malloc(sizeof(*decrypt_array) * hex_array_len);
+    hex_array_len = hexstring2hexarray((char *)hex_string, &hex_array);
+    decrypt_array = malloc(sizeof(char) * hex_array_len);
     float rate = 0;
     int count = 0;
-    
+    printf("hexstring:  %s\n", hex_string);
+    printf("hexarray:   ");
+    for (int i=0; i<hex_array_len; i++){
+        printf("%x", *(hex_array + i));
+    }
+    printf("\n");
     ///< try key from 0x00 to 0xff
     for (int i=0; i<0xff; i++){
         ///< decrypt message
+        printf("try key=0x%x:\n", i);
         for (int j=0; j<hex_array_len; j++){
             *(decrypt_array + j) = *(hex_array + j) ^ i;
+            printf("%c", *(decrypt_array + j));
         }
+        printf("\n");
         ///< calculate rate of each letter in the message
-        for (int k='a'; k<='z'; k++){
-            for (int m=0; m<hex_array_len; m++){
-                if (k == *(decrypt_array + m)){
-                    count++;
-                }
-            }
-            count = 0;
-            rate = count / (float)hex_array_len;
-            rate_array[i][k-'a'] = rate;
+        for (int n=0; n<26; n++){
+            letter_freq[n] = 0;
         }
+        int sum_letter = calc_letter_freq(decrypt_array, hex_array_len, letter_freq);
+        for (int m=0; m<26; m++){
+//            printf("%c%d", 'a' + m, *(letter_freq + m));
+        }
+        printf("\n");
+//        printf("sum of letters: %d\n", sum_letter);
+        for (int k=0; k<26; k++){
+            if (sum_letter == 0){
+                rate_array[i][k] = 0;
+            } else {
+                rate_array[i][k] = (float)letter_freq[k] / sum_letter;
+            }
+//            printf("%2.5f ", rate_array[i][k]);
+        }
+        printf("\n\n");
     }
     ///< find the high score corresponding the character frequency in English plaintext.
     
     float score_array[256] = {0};
+    float diff;
+    float kk;
     for (int i=0; i<256; i++){
+        score_array[i] = 0;
         for (int j=0; j<26; j++){
-            abs_value = fabs(rate_array[i][j], english_freq[j]);
-            kk = abs_value * abs_value / english_freq[j];
+            diff = rate_array[i][j] - english_freq[j];
+            kk = diff * diff / english_freq[j];
             score_array[i] += kk;
-
+//            printf("%c: diff=%f; freq=%f; kk=%f; score=%f\n", j+'a', diff, english_freq[j], kk, score_array[i]);
         }
+//        printf("i=%d; score=%f;  \n", i, score_array[i]);
     }
 
     ///< find the least score number
-    float least_num = score_array[0];
+    float least_num = 1000000;
     int key = 0;
     for (int i=0; i<256; i++){
-        if (score_array[i] < least_num){
+        if (score_array[i] > 1 && score_array[i] < least_num){
             least_num = score_array[i];
             key = i;
         }
     }
 
 
-    printf("the key is 0x%x", key);
-    free(hex_array);
-    free(decrypt_array);
+    printf("\nthe key is 0x%x\n", key);
+    printf("the decrypt_array is:\n");
+    for (int j=0; j<hex_array_len; j++){
+        *(decrypt_array + j) = *(hex_array + j) ^ key;
+        printf("%c", *(decrypt_array + j));
+    }
+    printf("\n");
+    
+//    free(hex_array);
+//    free(decrypt_array);
 
     return EXIT_SUCCESS;
 }
 
 
-int hexstring2hexarray(char *hexstring, char *hexarray){
+int hexstring2hexarray(char *hexstring, char **hexarray){
 
     assert(hexstring != NULL);
+    int array_len = 0;
     int str_len = strlen(hexstring);
     if (str_len % 2 == 1){
         array_len = str_len / 2 + 1;
     } else {
         array_len = str_len / 2;
     }
-    hexarray = malloc(sizeof(*hexarray) * array_len);
+    *hexarray = malloc(sizeof(char) * array_len);
 
     int j = 0;
     char result = 0;
     for (int i=0; i<str_len;){
-        if (*(hexarray + i + 1) == '\0'){
-            result = hexchar2hexnum(*(hexstring + i));
+        if (*(hexstring + i + 1) == '\0'){
+            result = (char)hexchar2hexnum(*(hexstring + i));
             break;
         } else {
-            result = hexchar2hexnum(*(hexstring + i)) << 4 + hexchar2hexnum(*(hexarra + i + 1));
+            result = (char)hexchar2hexnum(*(hexstring + i)) * 16 + (char)hexchar2hexnum(*(hexstring + i + 1));
 
         }
-        *(hexarray + j++) = result;
+        *(*hexarray + j++) = result;
         i += 2;
     }
 
@@ -155,7 +186,6 @@ char * hexarray2string(char * array, int array_len){
         printf("%x", *(array + i));
     }
     printf("\n");
-    int i = 8;
     char * string = malloc(sizeof(*string) * (array_len + 1));
     *(string + array_len) = '\0';
     for (int i=0; i<array_len; i++){
@@ -214,3 +244,25 @@ char hexnum2char(char num){
     }
     return c;
 }
+
+
+int calc_letter_freq(char * string, int str_len, int * result){
+    int sum_chars = 0;
+    char c = 0;
+    for (int i=0; i<str_len; i++){
+        if (*(string + i) >= 'a' && *(string + i) <= 'z'){
+            sum_chars++;
+            c = *(string + i);
+            (*(result + c - 'a'))++;
+        }else if (*(string + i) >= 'A' && *(string + i) <= 'Z'){
+            sum_chars++;
+            c = *(string + i);
+            (*(result + c - 'A'))++;
+            
+        }
+    }
+            
+    return sum_chars;
+}
+
+

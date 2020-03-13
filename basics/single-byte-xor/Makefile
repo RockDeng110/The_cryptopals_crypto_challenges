@@ -1,6 +1,6 @@
 
 C      := gcc
-CCFLAGS := 
+CCFLAGS := -g -Wall
 LDFLAGS :=
 
 TARGETS:= main
