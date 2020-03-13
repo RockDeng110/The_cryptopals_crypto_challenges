@@ -33,6 +33,7 @@ char hexnum2char(char num);
 char * hexarray2string(char * array, int array_len);
 int hexstring2hexarray(char *hexstring, char **hexarray);
 int calc_letter_freq(char * string, int str_len, int * result);
+int cmp_float(const void * p1, const void * p2);
 
 
 int main(int args, char ** argv){
@@ -42,6 +43,7 @@ int main(int args, char ** argv){
     char * decrypt_array = NULL;
     int letter_freq[26] = {0};
     int hex_array_len;
+    float score_array[256] = {0};
     hex_array_len = hexstring2hexarray((char *)hex_string, &hex_array);
     decrypt_array = malloc(sizeof(char) * hex_array_len);
     float rate = 0;
@@ -53,7 +55,7 @@ int main(int args, char ** argv){
     }
     printf("\n");
     ///< try key from 0x00 to 0xff
-    for (int i=0; i<0xff; i++){
+    for (int i=0; i<256; i++){
         ///< decrypt message
         printf("try key=0x%x:\n", i);
         for (int j=0; j<hex_array_len; j++){
@@ -61,19 +63,21 @@ int main(int args, char ** argv){
             printf("%c", *(decrypt_array + j));
         }
         printf("\n");
+
         ///< calculate rate of each letter in the message
         for (int n=0; n<26; n++){
             letter_freq[n] = 0;
         }
         int sum_letter = calc_letter_freq(decrypt_array, hex_array_len, letter_freq);
-        for (int m=0; m<26; m++){
+//        for (int m=0; m<26; m++){
 //            printf("%c%d", 'a' + m, *(letter_freq + m));
-        }
-        printf("\n");
+//        }
+//        printf("\n");
 //        printf("sum of letters: %d\n", sum_letter);
         for (int k=0; k<26; k++){
             if (sum_letter == 0){
-                rate_array[i][k] = 0;
+                score_array[i] = -1;
+                break;
             } else {
                 rate_array[i][k] = (float)letter_freq[k] / sum_letter;
             }
@@ -81,32 +85,50 @@ int main(int args, char ** argv){
         }
         printf("\n\n");
     }
+
     ///< find the high score corresponding the character frequency in English plaintext.
-    
-    float score_array[256] = {0};
     float diff;
     float kk;
     for (int i=0; i<256; i++){
-        score_array[i] = 0;
-        for (int j=0; j<26; j++){
-            diff = rate_array[i][j] - english_freq[j];
-            kk = diff * diff / english_freq[j];
-            score_array[i] += kk;
-//            printf("%c: diff=%f; freq=%f; kk=%f; score=%f\n", j+'a', diff, english_freq[j], kk, score_array[i]);
+        if (score_array[i] == -1){
+            continue;
+        } else{
+            score_array[i] = 0;
+            for (int j=0; j<26; j++){
+                diff = rate_array[i][j] - english_freq[j];
+                kk = diff * diff / english_freq[j];
+                score_array[i] += kk;
+//                printf("%c: diff=%f; freq=%f; kk=%f; score=%f\n", j+'a', diff, english_freq[j], kk, score_array[i]);
+            }
         }
-//        printf("i=%d; score=%f;  \n", i, score_array[i]);
+        printf("i=%d; score=%f;  \n", i, score_array[i]);
     }
 
     ///< find the least score number
-    float least_num = 1000000;
     int key = 0;
+#if 0
+    qsort(score_array, 256, sizeof(float), cmp_float);
+    printf("sorted score array: \n");
     for (int i=0; i<256; i++){
-        if (score_array[i] > 1 && score_array[i] < least_num){
-            least_num = score_array[i];
+        printf("%f  ", score_array[i]);
+    }
+    printf("\n");
+    for (int i=0; i<256; i++){
+        if (score_array[i] != -1){
             key = i;
         }
     }
-
+#endif
+    float score_least = 1000000;
+    for (int i=0; i<256; i++){
+        if (score_array[i] != -1){
+            if (score_array[i] < score_least){
+                score_least = score_array[i];
+                key = i;
+            }
+        }
+    }
+    
 
     printf("\nthe key is 0x%x\n", key);
     printf("the decrypt_array is:\n");
@@ -265,4 +287,15 @@ int calc_letter_freq(char * string, int str_len, int * result){
     return sum_chars;
 }
 
+int cmp_float(const void * p1, const void * p2){
+    float a = *((float *)p1);
+    float b = *((float *)p2);
+    if(a > b){
+        return 1;
+    } else if (a < b){
+        return -1;
+    } else {
+        return 0;
+    }
 
+}
