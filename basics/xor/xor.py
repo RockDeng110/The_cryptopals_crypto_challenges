@@ -15,4 +15,5 @@ print(hex2)
 
 hex3 = bytes([a ^ b for a, b in zip(hex1, hex2)])
 hex3_str = codecs.encode(hex3, 'hex')
-print(hex3_str)
+print("hex3:{}".format(hex3))
+print("hex3_str:{}".format(hex3_str))
